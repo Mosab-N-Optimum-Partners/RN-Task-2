@@ -1,0 +1,92 @@
+import { StateCreator } from './../node_modules/zustand/vanilla.d';
+import { Post, PostStore } from "./post.types";
+import { postService } from './postService';
+import { create } from 'zustand';
+
+const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) => ({
+    postsById: {},
+    postIds: [],
+    isLoading: false,
+    error: null,
+    setPosts(posts) {
+        const byId: Record<number, Post> = {};
+        const ids: number[] = [];
+
+        for (const post of posts)
+        {
+            byId[ post.id ] = post;
+            ids.push(post.id)
+        }
+        set({ postsById: byId, postIds: ids })
+    },
+    async fetchPosts() {
+        set({ isLoading: true, error: null })
+        try
+        {
+            const posts = await postService.getAll()
+            get().setPosts(posts);
+        }
+        catch (error) { set({ error: 'Fetching failed' }) }
+        finally { set({ isLoading: false }) }
+    },
+    async createPost(input) {
+        set({ isLoading: true, error: null })
+        try
+        {
+            const newPost = await postService.create(input);
+            const existingIds = get().postIds;
+            const newId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1
+            const postWithNewId: Post = {
+                ...newPost,
+                id: newId,
+                userId: 11
+            }
+            set((state) => ({
+                postsById: { ...state.postsById, postWithNewId },
+                postIds: [ ...state.postIds, newId ]
+            }))
+
+        }
+        catch (error) { set({ error: "Creating new post failed" }) }
+        finally { set({ isLoading: false }) }
+
+    },
+    async updatePost(id, update) {
+        const existingPost = get().postsById[ id ];
+        if (!existingPost) return;
+        set({ isLoading: true, error: null });
+        try
+        {
+            const updated = await postService.update(id, update);
+
+            set((state) => ({
+                postsById: { ...state.postsById, [ id ]: updated }
+            }));
+        }
+        catch (error) { set({ error: 'Updateing failed' }) }
+        finally { set({ isLoading: false }) }
+
+    },
+    async deletePost(id) {
+        const existingPost = get().postsById[ id ];
+        if (!existingPost) return;
+        set({ isLoading: true, error: null });
+
+        try
+        {
+            await postService.delete(id);
+            set((state) => {
+                const { [ id ]: postToDelete, ...rest } = state.postsById;
+                const newIds = state.postIds.filter((postId) => postId !== id)
+                return {
+                    postsById: rest,
+                    postIds: newIds,
+                }
+            })
+        }
+        catch (error) { set({ error: 'Updateing failed' }) }
+        finally { set({ isLoading: false }) }
+    },
+})
+
+export const usePostStore = create<PostStore>(createPostStore)
