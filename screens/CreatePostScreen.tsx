@@ -6,6 +6,7 @@ import Screen from '../shared/layout/Screen'
 import Button from '../shared/components/button/Button'
 import { useNavigation } from '@react-navigation/native'
 import { Nav } from '../navigation/types'
+import Toast from 'react-native-toast-message'
 
 export default function CreatePostScreen() {
   const { createPost } = usePostStore()
@@ -13,7 +14,18 @@ export default function CreatePostScreen() {
   const [ inputBody, setBody ] = useState("");
   const navigation = useNavigation<Nav>();
   const handleCreate = () => {
-    if (!inputTitle.trim() || !inputBody.trim()) return;
+    const missingTitle = !inputTitle.trim();
+    const missingBody = !inputBody.trim();
+    if (missingTitle || missingBody)
+    {
+      const missingFields = [
+        missingTitle ? "Title" : null,
+        missingBody ? "Body" : null,
+      ].filter(Boolean);
+      const message = missingFields.length > 1 ? `${ missingFields.join(" and ") } fields are missing` : `${ missingFields[ 0 ] } field is missing`
+      Toast.show({ type: 'error', text1: "Please fill in all fields!", text2: `${ message }` })
+      return;
+    };
     createPost({ title: inputTitle, body: inputBody })
     navigation.goBack()
   }

@@ -1,3 +1,4 @@
+import Toast from 'react-native-toast-message';
 import { StateCreator } from './../node_modules/zustand/vanilla.d';
 import { Post, PostStore } from "./post.types";
 import { postService } from './postService';
@@ -7,7 +8,6 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
     postsById: {},
     postIds: [],
     isLoading: false,
-    error: null,
     setPosts(posts) {
         const byId: Record<number, Post> = {};
         const ids: number[] = [];
@@ -20,17 +20,17 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
         set({ postsById: byId, postIds: ids })
     },
     async fetchPosts() {
-        set({ isLoading: true, error: null })
+        set({ isLoading: true })
         try
         {
             const posts = await postService.getAll()
             get().setPosts(posts);
         }
-        catch (error) { set({ error: 'Fetching failed' }) }
+        catch (error) { Toast.show({ type: 'error', text1: 'Fetching failed!' }); }
         finally { set({ isLoading: false }) }
     },
     async createPost(input) {
-        set({ isLoading: true, error: null })
+        set({ isLoading: true })
         try
         {
             const newPost = await postService.create(input);
@@ -42,19 +42,23 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
                 userId: 11
             }
             set((state) => ({
-                postsById: { ...state.postsById, postWithNewId },
+                postsById: { ...state.postsById, [ newId ]: postWithNewId },
                 postIds: [ ...state.postIds, newId ]
             }))
+            Toast.show({ type: 'success', text1: 'Post created!' });
 
         }
-        catch (error) { set({ error: "Creating new post failed" }) }
+        catch (error)
+        {
+            Toast.show({ type: 'error', text1: 'Creating post failed' });
+        }
         finally { set({ isLoading: false }) }
 
     },
     async updatePost(id, update) {
         const existingPost = get().postsById[ id ];
         if (!existingPost) return;
-        set({ isLoading: true, error: null });
+        set({ isLoading: true });
         try
         {
             const updated = await postService.update(id, update);
@@ -62,15 +66,20 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
             set((state) => ({
                 postsById: { ...state.postsById, [ id ]: updated }
             }));
+            Toast.show({ type: 'success', text1: 'Post Updated!' });
+
         }
-        catch (error) { set({ error: 'Updateing failed' }) }
+        catch (error)
+        {
+            Toast.show({ type: 'error', text1: 'Updating post failed' });
+        }
         finally { set({ isLoading: false }) }
 
     },
     async deletePost(id) {
         const existingPost = get().postsById[ id ];
         if (!existingPost) return;
-        set({ isLoading: true, error: null });
+        set({ isLoading: true });
 
         try
         {
@@ -83,8 +92,13 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
                     postIds: newIds,
                 }
             })
+            Toast.show({ type: 'success', text1: 'Post Deleted!' });
+
         }
-        catch (error) { set({ error: 'Updateing failed' }) }
+        catch (error)
+        {
+            Toast.show({ type: 'error', text1: 'Deleting post failed' });
+        }
         finally { set({ isLoading: false }) }
     },
 })
