@@ -12,5 +12,5 @@ export const inputStyles = StyleSheet.create({
         width: "100%"
     },
     placeholder: { color: colors.background },
-    multiline: { height: 80 }
+    multiline: { height: 150 }
 })

@@ -4,11 +4,12 @@ export interface Post {
     body: string,
     userId: number,
 }
-
+export type PostStatus = "deleting" | "updating" | "idle"
 export interface PostStore {
     postsById: Record<string, Post>,
     postIds: number[],
     isLoading: boolean,
+    activePostAction: { id: number, status: PostStatus } | null
 
     fetchPosts: () => Promise<void>,
     createPost: (input: Omit<Post, "id" | "userId">) => Promise<void>,

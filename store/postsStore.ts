@@ -8,6 +8,7 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
     postsById: {},
     postIds: [],
     isLoading: false,
+    activePostAction: null,
     setPosts(posts) {
         const byId: Record<number, Post> = {};
         const ids: number[] = [];
@@ -58,7 +59,7 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
     async updatePost(id, update) {
         const existingPost = get().postsById[ id ];
         if (!existingPost) return;
-        set({ isLoading: true });
+        set({ activePostAction: { id, status: 'updating' } });
         try
         {
             const updated = await postService.update(id, update);
@@ -73,13 +74,13 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
         {
             Toast.show({ type: 'error', text1: 'Updating post failed' });
         }
-        finally { set({ isLoading: false }) }
+        finally { set({ activePostAction: null }) }
 
     },
     async deletePost(id) {
         const existingPost = get().postsById[ id ];
         if (!existingPost) return;
-        set({ isLoading: true });
+        set({ activePostAction: { id, status: 'deleting' } });
 
         try
         {
@@ -99,7 +100,7 @@ const createPostStore: StateCreator<PostStore, [], [], PostStore> = (set, get) =
         {
             Toast.show({ type: 'error', text1: 'Deleting post failed' });
         }
-        finally { set({ isLoading: false }) }
+        finally { set({ activePostAction: null }) }
     },
 })
 
